@@ -8,10 +8,8 @@ import static org.hamcrest.Matchers.*;
 
 public class SmokeTest extends BaseTest {
 
-  @Test
-  public void shouldHitHealth() {
-    RestAssured.given()
-      .when().get("/test")
-      .then().statusCode(anyOf(is(200), is(204), is(404)));
-  }
+	@Test
+	public void shouldHitHealth() {
+		RestAssured.given().when().get("/test").then().statusCode(anyOf(is(200), is(204), is(404)));
+	}
 }

@@ -10,25 +10,22 @@ import org.testng.annotations.BeforeClass;
 
 public abstract class BaseTest {
 
-    protected RequestSpecification spec;
-    protected TestConfig cfg;
+	protected RequestSpecification spec;
+	protected TestConfig cfg;
 
-    @BeforeClass(alwaysRun = true)
-    public void setup() {
-        cfg = new TestConfig();
+	@BeforeClass(alwaysRun = true)
+	public void setup() {
+		cfg = new TestConfig();
 
-        RestAssured.baseURI = cfg.baseUrl();
-        RestAssured.basePath = cfg.apiBasePath();
+		RestAssured.baseURI = cfg.baseUrl();
+		RestAssured.basePath = cfg.apiBasePath();
 
-        // Loga request/response automaticamente SOMENTE se algum assert falhar
-        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails(LogDetail.ALL);
+		// Loga request/response automaticamente SOMENTE se algum assert falhar
+		RestAssured.enableLoggingOfRequestAndResponseIfValidationFails(LogDetail.ALL);
 
-        // Allure integration para RestAssured (sem precisar mexer nos testes)
-        Filter allureFilter = new io.qameta.allure.restassured.AllureRestAssured();
+		// Allure integration para RestAssured (sem precisar mexer nos testes)
+		Filter allureFilter = new io.qameta.allure.restassured.AllureRestAssured();
 
-        spec = new RequestSpecBuilder()
-                .setContentType(ContentType.JSON)
-                .addFilter(allureFilter)
-                .build();
-    }
+		spec = new RequestSpecBuilder().setContentType(ContentType.JSON).addFilter(allureFilter).build();
+	}
 }

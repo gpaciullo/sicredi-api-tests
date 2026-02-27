@@ -6,14 +6,14 @@ import io.restassured.specification.RequestSpecification;
 
 public class AuthClient extends BaseClient {
 
-    public AuthClient(RequestSpecification spec) {
-        super(spec);
-    }
+	public AuthClient(RequestSpecification spec) {
+		super(spec);
+	}
 
-    /**
-     * POST /auth/login
-     */
-    public Response login(LoginRequest request) {
-        return post("/auth/login", request);
-    }
+	/**
+	 * POST /auth/login
+	 */
+	public Response login(LoginRequest request) {
+		return post("/auth/login", request);
+	}
 }
