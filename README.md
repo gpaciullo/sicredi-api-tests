@@ -28,10 +28,10 @@ Projeto de automação de testes de API utilizando **Java 17**, **Maven**, **Tes
 ## Configuração
 Arquivo padrão: `src/test/resources/config.properties`
 
+## Executando os testes
+mvn clean test
+
 Exemplo:
 ```properties
 baseUrl=https://dummyjson.com
 apiBasePath=
-
-## Executando os testes
-mvn clean test
