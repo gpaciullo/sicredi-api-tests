@@ -25,11 +25,12 @@ Projeto de automação de testes de API utilizando **Java 17**, **Maven**, **Tes
 - Java 17 instalado e configurado (`JAVA_HOME`)
 - Maven instalado e disponível no PATH
 
-## Configuração
-Arquivo padrão: `src/test/resources/config.properties`
 
 ## Executando os testes
 mvn clean test
+
+## Configuração
+Arquivo padrão: `src/test/resources/config.properties`
 
 Exemplo:
 ```properties
