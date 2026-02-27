@@ -32,3 +32,6 @@ Exemplo:
 ```properties
 baseUrl=https://dummyjson.com
 apiBasePath=
+
+## Executando os testes
+mvn clean test
