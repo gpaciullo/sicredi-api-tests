@@ -36,3 +36,21 @@ Exemplo:
 ```properties
 baseUrl=https://dummyjson.com
 apiBasePath=
+
+## Comportamento identificado na API
+
+Durante a execução dos testes foi identificado que o endpoint:
+
+POST /products/add
+
+aceita alguns dados considerados inválidos, como por exemplo:
+
+- título vazio
+- título nulo
+- preço negativo
+
+Mesmo nesses cenários, a API retorna **201 Created** e cria o produto normalmente.
+
+Por esse motivo, os testes automatizados foram ajustados para **documentar o comportamento atual da API**, ao invés de esperar erros de validação.
+
+Esse comportamento pode indicar uma possível oportunidade de melhoria na validação de dados da API.
