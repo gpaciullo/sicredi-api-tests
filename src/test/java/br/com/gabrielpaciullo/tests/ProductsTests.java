@@ -1,6 +1,7 @@
 package br.com.gabrielpaciullo.tests;
 
 import br.com.gabrielpaciullo.client.ProductsClient;
+import br.com.gabrielpaciullo.utils.TestDataProvider;
 import br.com.gabrielpaciullo.config.BaseTest;
 import br.com.gabrielpaciullo.model.ProductRequest;
 import org.testng.annotations.BeforeClass;
@@ -34,17 +35,28 @@ public class ProductsTests extends BaseTest {
 	}
 
 	@Test
-	public void deveRetornar404QuandoIdInvalido() {
+	public void shouldReturnNotFoundForInvalidProductId() {
 		products.byId(999999).then()
 				// a API pode responder 404 ou 400 dependendo da implementação
 				.statusCode(anyOf(is(404), is(400)));
 	}
 
-	@Test
-	public void deveAdicionarProduto() {
-		String title = "Produto QA " + System.currentTimeMillis();
+	@Test(dataProvider = "productData", dataProviderClass = TestDataProvider.class)
+	public void shouldCreateProductSuccessfully(String baseTitle, double price) {
+	    String title = baseTitle + " " + System.currentTimeMillis();
 
-		products.add(new ProductRequest(title, 123.45)).then().statusCode(anyOf(is(200), is(201)))
-				.body("id", notNullValue()).body("title", equalTo(title)).body("price", notNullValue());
+	    products.add(new ProductRequest(title, price))
+	            .then()
+	            .statusCode(anyOf(is(200), is(201)))
+	            .body("id", notNullValue())
+	            .body("title", equalTo(title))
+	            .body("price", notNullValue());
+	}
+	
+	@Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
+	public void deveRetornarErroAoAdicionarProdutoInvalido(String title, double price) {
+	    products.add(new ProductRequest(title, price))
+	            .then()
+	            .statusCode(anyOf(is(400), is(422))); // depende da API
 	}
 }
