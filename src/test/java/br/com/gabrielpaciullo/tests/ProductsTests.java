@@ -4,6 +4,7 @@ import br.com.gabrielpaciullo.client.ProductsClient;
 import br.com.gabrielpaciullo.utils.TestDataProvider;
 import br.com.gabrielpaciullo.config.BaseTest;
 import br.com.gabrielpaciullo.model.ProductRequest;
+import br.com.gabrielpaciullo.utils.RandomUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -35,15 +36,15 @@ public class ProductsTests extends BaseTest {
 	}
 
 	@Test
-	public void shouldReturnNotFoundForInvalidProductId() {
+	public void deveRetornarNotFoundQuandoIdInvalido() {
 		products.byId(999999).then()
 				// a API pode responder 404 ou 400 dependendo da implementação
 				.statusCode(anyOf(is(404), is(400)));
 	}
 
 	@Test(dataProvider = "productData", dataProviderClass = TestDataProvider.class)
-	public void shouldCreateProductSuccessfully(String baseTitle, double price) {
-	    String title = baseTitle + " " + System.currentTimeMillis();
+	public void deveCriarProdutoComSucesso(String baseTitle, double price) {
+		String title = baseTitle + "-" + RandomUtils.randomProductName();
 
 	    products.add(new ProductRequest(title, price))
 	            .then()
@@ -62,5 +63,17 @@ public class ProductsTests extends BaseTest {
 	            .statusCode(anyOf(is(200), is(201)))
 	            .body("id", notNullValue())
 	            .body("price", notNullValue());
+	}
+	
+	
+	@Test
+	public void deveDocumentarComportamentoDaPaginacaoEmValoresLimite() {
+	    products.list(0, 0)
+	        .then()
+	        .statusCode(200);
+
+	    products.list(10, -1)
+	        .then()
+	        .statusCode(anyOf(is(200), is(400)));
 	}
 }
