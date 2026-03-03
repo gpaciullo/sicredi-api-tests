@@ -54,7 +54,7 @@ public class ProductsTests extends BaseTest {
 	}
 	
 	@Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
-	public void shouldDocumentThatApiAcceptsInvalidProductData(String title, double price) {
+	public void deveDocumentarQueApiAceitaDadosInvalidosAoAdicionarProduto(String title, double price) {
 
 	    products.add(new ProductRequest(title, price))
 	            .then()
