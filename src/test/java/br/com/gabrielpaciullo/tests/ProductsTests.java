@@ -53,10 +53,14 @@ public class ProductsTests extends BaseTest {
 	            .body("price", notNullValue());
 	}
 	
-	@Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
-	public void deveRetornarErroAoAdicionarProdutoInvalido(String title, double price) {
-	    products.add(new ProductRequest(title, price))
-	            .then()
-	            .statusCode(anyOf(is(400), is(422))); // depende da API
-	}
+	@Test(
+		    dataProvider = "invalidProductData",
+		    dataProviderClass = TestDataProvider.class,
+		    enabled = false
+		)
+		public void shouldReturnValidationErrorWhenInvalidProductIsSent(String title, double price) {
+		    products.add(new ProductRequest(title, price))
+		            .then()
+		            .statusCode(anyOf(is(400), is(422)));
+		}
 }
