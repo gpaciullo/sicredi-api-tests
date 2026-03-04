@@ -1,15 +1,20 @@
 package br.com.gabrielpaciullo.tests;
 
+import br.com.gabrielpaciullo.client.HealthClient;
 import br.com.gabrielpaciullo.config.BaseTest;
-import io.restassured.RestAssured;
 import org.testng.annotations.Test;
-
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class SmokeTest extends BaseTest {
 
-	@Test
-	public void shouldHitHealth() {
-		RestAssured.given().when().get("/test").then().statusCode(anyOf(is(200), is(204), is(404)));
-	}
+	@Test(groups = "smoke")
+    public void deveBaterNoEndpointDeHealthCheck() {
+
+        HealthClient healthClient = new HealthClient(spec);
+
+        healthClient.health()
+                .then()
+                .statusCode(200)
+                .body(notNullValue());
+    }
 }

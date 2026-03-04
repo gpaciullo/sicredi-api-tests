@@ -1,79 +1,166 @@
 package br.com.gabrielpaciullo.tests;
 
+import br.com.gabrielpaciullo.assertions.ApiAssertions;
 import br.com.gabrielpaciullo.client.ProductsClient;
-import br.com.gabrielpaciullo.utils.TestDataProvider;
 import br.com.gabrielpaciullo.config.BaseTest;
 import br.com.gabrielpaciullo.model.ProductRequest;
+import br.com.gabrielpaciullo.utils.ProductFactory;
 import br.com.gabrielpaciullo.utils.RandomUtils;
+import br.com.gabrielpaciullo.utils.TestDataProvider;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class ProductsTests extends BaseTest {
 
-	private ProductsClient products;
+    private ProductsClient products;
 
-	@BeforeClass(alwaysRun = true)
-	public void init() {
-		products = new ProductsClient(spec);
-	}
+    @BeforeClass(alwaysRun = true)
+    public void init() {
+        products = new ProductsClient(spec);
+    }
 
-	@Test
-	public void deveListarProdutosComPaginacao() {
-		int limit = 10;
-		int skip = 0;
+    @Test
+    public void deveListarProdutosComPaginacao() {
+        int limit = 10;
+        int skip = 0;
 
-		products.list(limit, skip).then().statusCode(200).body("products", is(not(empty())))
-				.body("limit", equalTo(limit)).body("skip", equalTo(skip)).body("total", greaterThan(0));
-	}
+        io.restassured.response.ValidatableResponse response = products.list(limit, skip).then();
 
-	@Test
-	public void deveBuscarProdutoPorId() {
-		int id = 1;
+        ApiAssertions.shouldBeOk(response);
+        ApiAssertions.shouldHaveNonEmptyArray(response, "products");
 
-		products.byId(id).then().statusCode(200).body("id", equalTo(id)).body("title", not(isEmptyOrNullString()));
-	}
+        response.body("limit", equalTo(limit))
+                .body("skip", equalTo(skip))
+                .body("total", greaterThan(0));
+    }
 
-	@Test
-	public void deveRetornarNotFoundQuandoIdInvalido() {
-		products.byId(999999).then()
-				// a API pode responder 404 ou 400 dependendo da implementação
-				.statusCode(anyOf(is(404), is(400)));
-	}
+    @Test
+    public void deveBuscarProdutoPorId() {
+        int id = 1;
 
-	@Test(dataProvider = "productData", dataProviderClass = TestDataProvider.class)
-	public void deveCriarProdutoComSucesso(String baseTitle, double price) {
-		String title = baseTitle + "-" + RandomUtils.randomProductName();
+        io.restassured.response.ValidatableResponse response = products.byId(id).then();
 
-	    products.add(new ProductRequest(title, price))
-	            .then()
-	            .statusCode(anyOf(is(200), is(201)))
-	            .body("id", notNullValue())
-	            .body("title", equalTo(title))
-	            .body("price", notNullValue());
-	}
-	
-	@Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
-	public void deveDocumentarQueApiAceitaDadosInvalidosAoAdicionarProduto(String title, double price) {
+        ApiAssertions.shouldBeOk(response);
 
-	    products.add(new ProductRequest(title, price))
-	            .then()
-	            // comportamento atual da API: aceita dados inválidos
-	            .statusCode(anyOf(is(200), is(201)))
-	            .body("id", notNullValue())
-	            .body("price", notNullValue());
-	}
-	
-	
-	@Test
-	public void deveDocumentarComportamentoDaPaginacaoEmValoresLimite() {
-	    products.list(0, 0)
-	        .then()
-	        .statusCode(200);
+        response.body("id", equalTo(id))
+                .body("title", not(isEmptyOrNullString()));
+    }
 
-	    products.list(10, -1)
-	        .then()
-	        .statusCode(anyOf(is(200), is(400)));
-	}
+    @Test
+    public void deveRetornarNotFoundQuandoIdInvalido() {
+        products.byId(999999).then()
+                // a API pode responder 404 ou 400 dependendo da implementação
+                .statusCode(anyOf(is(404), is(400)));
+    }
+
+    @Test(dataProvider = "dadosProdutosValidos", dataProviderClass = TestDataProvider.class)
+    public void deveCriarProdutoComSucesso(String baseTitle, double price) {
+        String title = baseTitle + "-" + RandomUtils.randomProductName();
+
+        io.restassured.response.ValidatableResponse response = products.add(ProductFactory.produtoValido(title, price)).then();
+
+        ApiAssertions.shouldBeCreated(response);
+        ApiAssertions.shouldHaveId(response);
+
+        response.body("title", equalTo(title))
+                .body("price", notNullValue());
+    }
+
+    @Test(dataProvider = "dadosProdutosInvalidos", dataProviderClass = TestDataProvider.class)
+    public void deveDocumentarQueApiAceitaDadosInvalidosAoAdicionarProduto(String title, double price) {
+        // comportamento atual do DummyJSON: aceita dados inválidos e retorna 201/200
+    	io.restassured.response.ValidatableResponse response = products.add(new ProductRequest(title, price)).then();
+
+        ApiAssertions.shouldBeCreated(response);
+        ApiAssertions.shouldHaveId(response);
+
+        response.body("price", notNullValue());
+    }
+
+    @Test
+    public void deveDocumentarComportamentoDaPaginacaoEmValoresLimite() {
+        ApiAssertions.shouldBeOk(products.list(0, 0).then());
+
+        products.list(10, -1)
+                .then()
+                .statusCode(anyOf(is(200), is(400)));
+    }
+
+    @Test
+    public void deveDocumentarComportamentoQuandoPrecoForNegativo() {
+        ProductRequest request = new ProductRequest("Produto inválido QA", -10.0);
+
+        io.restassured.response.ValidatableResponse response = products.add(request).then();
+
+        ApiAssertions.shouldBeCreated(response);
+
+        response.body("price", equalTo(-10));
+    }
+
+    @Test
+    public void deveDocumentarComportamentoQuandoTituloForVazio() {
+        ProductRequest request = new ProductRequest("", 100.0);
+
+        io.restassured.response.ValidatableResponse response = products.add(request).then();
+
+        ApiAssertions.shouldBeCreated(response);
+
+        response.body("title", isEmptyString());
+    }
+
+    @Test
+    public void deveDocumentarComportamentoDaAPIParaPaginacaoInvalida() {
+        products.list(-1, -10)
+                .then()
+                .statusCode(anyOf(is(200), is(400)));
+    }
+
+    @Test
+    public void deveGarantirContratoMinimoAoBuscarProdutoPorId() {
+        int id = 1;
+
+        io.restassured.response.ValidatableResponse response = products.byId(id).then();
+
+        ApiAssertions.shouldBeOk(response);
+
+        response.body("id", notNullValue())
+                .body("title", notNullValue())
+                .body("price", notNullValue())
+                .body("category", notNullValue());
+    }
+
+    @Test
+    public void deveRetornarNaoAutorizadoQuandoAcessarEndpointProtegidoSemToken() {
+    	io.restassured.response.ValidatableResponse response = given()
+                .spec(spec)
+                .when()
+                .get("/auth/products")
+                .then();
+
+        ApiAssertions.shouldBeUnauthorized(response);
+    }
+
+    @Test
+    public void deveDocumentarEstabilidadeDaListagemDeProdutos() {
+        int limit = 5;
+        int skip = 0;
+
+        for (int i = 0; i < 3; i++) {
+        	io.restassured.response.ValidatableResponse response = products.list(limit, skip).then();
+
+            ApiAssertions.shouldBeOk(response);
+            ApiAssertions.shouldHaveNonEmptyArray(response, "products");
+        }
+    }
+
+    @Test
+    public void deveDocumentarComportamentoQuandoSkipForMaiorQueTotal() {
+        products.list(10, 999999)
+                .then()
+                .statusCode(200)
+                .body("products", is(empty()));
+    }
 }

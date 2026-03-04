@@ -8,23 +8,27 @@ import java.util.Map;
 
 public class ProductsClient extends BaseClient {
 
-	public ProductsClient(RequestSpecification spec) {
-		super(spec);
-	}
+    private static final String PRODUCTS = "/products";
+    private static final String PRODUCTS_ADD = "/products/add";
+    private static final String AUTH_PRODUCTS = "/auth/products";
 
-	public Response list(int limit, int skip) {
-		return get("/products", Map.of("limit", limit, "skip", skip));
-	}
+    public ProductsClient(RequestSpecification spec) {
+        super(spec);
+    }
 
-	public Response byId(int id) {
-		return get("/products/" + id);
-	}
+    public Response list(int limit, int skip) {
+        return get(PRODUCTS, Map.of("limit", limit, "skip", skip));
+    }
 
-	public Response add(ProductRequest request) {
-		return post("/products/add", request);
-	}
+    public Response byId(int id) {
+        return get(String.format("%s/%d", PRODUCTS, id));
+    }
 
-	public Response authProducts(String token) {
-		return getWithBearer("/auth/products", token);
-	}
+    public Response add(ProductRequest request) {
+        return post(PRODUCTS_ADD, request);
+    }
+
+    public Response authProducts(String token) {
+        return getWithBearer(AUTH_PRODUCTS, token);
+    }
 }
