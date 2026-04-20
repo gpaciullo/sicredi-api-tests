@@ -7,10 +7,10 @@ import br.com.gabrielpaciullo.model.ProductRequest;
 import br.com.gabrielpaciullo.utils.ProductFactory;
 import br.com.gabrielpaciullo.utils.RandomUtils;
 import br.com.gabrielpaciullo.utils.TestDataProvider;
+import io.restassured.response.ValidatableResponse;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class ProductsTests extends BaseTest {
@@ -27,7 +27,7 @@ public class ProductsTests extends BaseTest {
         int limit = 10;
         int skip = 0;
 
-        io.restassured.response.ValidatableResponse response = products.list(limit, skip).then();
+        ValidatableResponse response = products.list(limit, skip).then();
 
         ApiAssertions.shouldBeOk(response);
         ApiAssertions.shouldHaveNonEmptyArray(response, "products");
@@ -41,26 +41,25 @@ public class ProductsTests extends BaseTest {
     public void shouldGetProductById() {
         int id = 1;
 
-        io.restassured.response.ValidatableResponse response = products.byId(id).then();
+        ValidatableResponse response = products.byId(id).then();
 
         ApiAssertions.shouldBeOk(response);
-
-        response.body("id", equalTo(id))
-                .body("title", not(isEmptyOrNullString()));
+        response.body("id", equalTo(id));
+        ApiAssertions.shouldHaveNonBlankField(response, "title");
     }
 
     @Test
     public void shouldReturnNotFoundWhenIdIsInvalid() {
         products.byId(999999).then()
-                // a API pode responder 404 ou 400 dependendo da implementação
                 .statusCode(anyOf(is(404), is(400)));
     }
 
     @Test(dataProvider = "validProductData", dataProviderClass = TestDataProvider.class)
     public void shouldCreateProductSuccessfully(String baseTitle, double price) {
         String title = baseTitle + "-" + RandomUtils.randomProductName();
+        ProductRequest request = ProductFactory.validProduct(title, price);
 
-        io.restassured.response.ValidatableResponse response = products.add(ProductFactory.validProduct(title, price)).then();
+        ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
         ApiAssertions.shouldHaveId(response);
@@ -71,74 +70,51 @@ public class ProductsTests extends BaseTest {
 
     @Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
     public void shouldDocumentThatApiAcceptsInvalidDataWhenAddingProduct(String title, double price) {
-        // comportamento atual do DummyJSON: aceita dados inválidos e retorna 201/200
-    	io.restassured.response.ValidatableResponse response = products.add(new ProductRequest(title, price)).then();
+        ValidatableResponse response = products.add(new ProductRequest(title, price)).then();
 
         ApiAssertions.shouldBeCreated(response);
         ApiAssertions.shouldHaveId(response);
-
         response.body("price", notNullValue());
     }
 
     @Test
     public void shouldDocumentPaginationBehaviorAtBoundaryValues() {
         ApiAssertions.shouldBeOk(products.list(0, 0).then());
-
-        products.list(10, -1)
-                .then()
-                .statusCode(anyOf(is(200), is(400)));
+        ApiAssertions.shouldBeBadRequestOrOk(products.list(10, -1).then());
     }
 
     @Test
     public void shouldDocumentBehaviorWhenPriceIsNegative() {
-        ProductRequest request = new ProductRequest("Produto inválido QA", -10.0);
-
-        io.restassured.response.ValidatableResponse response = products.add(request).then();
+        ValidatableResponse response = products.add(ProductFactory.productWithNegativePrice()).then();
 
         ApiAssertions.shouldBeCreated(response);
-
         response.body("price", equalTo(-10));
     }
 
     @Test
     public void shouldDocumentBehaviorWhenTitleIsEmpty() {
-        ProductRequest request = new ProductRequest("", 100.0);
-
-        io.restassured.response.ValidatableResponse response = products.add(request).then();
+        ValidatableResponse response = products.add(ProductFactory.productWithEmptyTitle()).then();
 
         ApiAssertions.shouldBeCreated(response);
-
         response.body("title", isEmptyString());
     }
 
     @Test
     public void shouldDocumentApiBehaviorForInvalidPagination() {
-        products.list(-1, -10)
-                .then()
-                .statusCode(anyOf(is(200), is(400)));
+        ApiAssertions.shouldBeBadRequestOrOk(products.list(-1, -10).then());
     }
 
     @Test
     public void shouldEnsureMinimumContractWhenGettingProductById() {
-        int id = 1;
-
-        io.restassured.response.ValidatableResponse response = products.byId(id).then();
+        ValidatableResponse response = products.byId(1).then();
 
         ApiAssertions.shouldBeOk(response);
-
-        response.body("id", notNullValue())
-                .body("title", notNullValue())
-                .body("price", notNullValue())
-                .body("category", notNullValue());
+        ApiAssertions.shouldHaveProductCoreFields(response);
     }
 
     @Test
     public void shouldReturnUnauthorizedWhenAccessingProtectedEndpointWithoutToken() {
-    	io.restassured.response.ValidatableResponse response = given()
-                .spec(spec)
-                .when()
-                .get("/auth/products")
-                .then();
+        ValidatableResponse response = products.authProductsWithoutToken().then();
 
         ApiAssertions.shouldBeUnauthorized(response);
     }
@@ -148,8 +124,8 @@ public class ProductsTests extends BaseTest {
         int limit = 5;
         int skip = 0;
 
-        for (int i = 0; i < 3; i++) {
-        	io.restassured.response.ValidatableResponse response = products.list(limit, skip).then();
+        for (int attempt = 0; attempt < 3; attempt++) {
+            ValidatableResponse response = products.list(limit, skip).then();
 
             ApiAssertions.shouldBeOk(response);
             ApiAssertions.shouldHaveNonEmptyArray(response, "products");
@@ -158,9 +134,9 @@ public class ProductsTests extends BaseTest {
 
     @Test
     public void shouldDocumentBehaviorWhenSkipExceedsTotal() {
-        products.list(10, 999999)
-                .then()
-                .statusCode(200)
-                .body("products", is(empty()));
+        ValidatableResponse response = products.list(10, 999999).then();
+
+        ApiAssertions.shouldBeOk(response);
+        ApiAssertions.shouldHaveEmptyArray(response, "products");
     }
 }

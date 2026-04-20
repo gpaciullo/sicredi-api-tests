@@ -31,4 +31,8 @@ public class ProductsClient extends BaseClient {
     public Response authProducts(String token) {
         return getWithBearer(AUTH_PRODUCTS, token);
     }
+
+    public Response authProductsWithoutToken() {
+        return get(AUTH_PRODUCTS);
+    }
 }

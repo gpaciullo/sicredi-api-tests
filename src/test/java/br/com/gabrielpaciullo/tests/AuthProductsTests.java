@@ -1,15 +1,12 @@
 package br.com.gabrielpaciullo.tests;
 
+import br.com.gabrielpaciullo.assertions.ApiAssertions;
 import br.com.gabrielpaciullo.client.AuthClient;
 import br.com.gabrielpaciullo.client.ProductsClient;
 import br.com.gabrielpaciullo.config.BaseTest;
-import br.com.gabrielpaciullo.model.LoginRequest;
 import io.restassured.response.ValidatableResponse;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
 
 public class AuthProductsTests extends BaseTest {
 
@@ -28,42 +25,36 @@ public class AuthProductsTests extends BaseTest {
 
         ValidatableResponse response = products.authProducts(token).then();
 
-        response.statusCode(200)
-                .body("products", is(not(empty())));
+        ApiAssertions.shouldBeOk(response);
+        ApiAssertions.shouldHaveNonEmptyArray(response, "products");
     }
 
     @Test
     public void shouldFailToAccessAuthProductsWithInvalidToken() {
         ValidatableResponse response = products.authProducts("token_invalido").then();
 
-        response.statusCode(anyOf(is(401), is(403)));
+        ApiAssertions.shouldBeUnauthorized(response);
     }
 
     @Test
     public void shouldFailToAccessAuthProductsWithoutAuthorizationHeader() {
-        ValidatableResponse response = given()
-                .spec(spec)
-                .when()
-                .get("/auth/products")
-                .then();
+        ValidatableResponse response = products.authProductsWithoutToken().then();
 
-        response.statusCode(anyOf(is(401), is(403)));
+        ApiAssertions.shouldBeUnauthorized(response);
     }
 
     @Test
     public void shouldFailLoginWithInvalidCredentials() {
-        ValidatableResponse response = auth.login(new LoginRequest("usuario_inexistente", "senha_errada")).then();
-        response.statusCode(anyOf(is(400), is(401), is(422)));
+        ValidatableResponse response = auth.login("usuario_inexistente", "senha_errada").then();
+
+        ApiAssertions.shouldBeBadRequestUnauthorizedOrUnprocessableEntity(response);
     }
 
     private String getValidAccessToken() {
-        String username = System.getProperty("username", "emilys");
-        String password = System.getProperty("password", "emilyspass");
-
-        return auth.login(new LoginRequest(username, password))
+        return auth.loginWithDefaultCredentials()
                 .then()
-                .statusCode(anyOf(is(200), is(201)))
-                .body("accessToken", not(isEmptyOrNullString()))
+                .statusCode(org.hamcrest.Matchers.anyOf(org.hamcrest.Matchers.is(200), org.hamcrest.Matchers.is(201)))
+                .body("accessToken", org.hamcrest.Matchers.not(org.hamcrest.Matchers.isEmptyOrNullString()))
                 .extract()
                 .path("accessToken");
     }
