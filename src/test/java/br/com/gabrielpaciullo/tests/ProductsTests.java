@@ -5,7 +5,6 @@ import br.com.gabrielpaciullo.client.ProductsClient;
 import br.com.gabrielpaciullo.config.BaseTest;
 import br.com.gabrielpaciullo.model.ProductRequest;
 import br.com.gabrielpaciullo.utils.ProductFactory;
-import br.com.gabrielpaciullo.utils.RandomUtils;
 import br.com.gabrielpaciullo.utils.TestDataProvider;
 import io.restassured.response.ValidatableResponse;
 import org.testng.annotations.BeforeClass;
@@ -55,22 +54,26 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test(dataProvider = "validProductData", dataProviderClass = TestDataProvider.class)
-    public void shouldCreateProductSuccessfully(String baseTitle, double price) {
-        String title = baseTitle + "-" + RandomUtils.randomProductName();
-        ProductRequest request = ProductFactory.validProduct(title, price);
+    public void shouldCreateProductSuccessfully(String baseTitle, double ignoredPrice) {
+        ProductRequest request = ProductFactory.randomValidProduct(baseTitle);
 
         ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
         ApiAssertions.shouldHaveId(response);
 
-        response.body("title", equalTo(title))
+        response
+                .body("title", equalTo(request.getTitle()))
                 .body("price", notNullValue());
     }
 
     @Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
     public void shouldDocumentThatApiAcceptsInvalidDataWhenAddingProduct(String title, double price) {
-        ValidatableResponse response = products.add(new ProductRequest(title, price)).then();
+        ProductRequest request = title == null
+                ? ProductFactory.productWithNullTitle()
+                : ProductFactory.validProduct(title, price);
+
+        ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
         ApiAssertions.shouldHaveId(response);
@@ -85,10 +88,11 @@ public class ProductsTests extends BaseTest {
 
     @Test
     public void shouldDocumentBehaviorWhenPriceIsNegative() {
-        ValidatableResponse response = products.add(ProductFactory.productWithNegativePrice()).then();
+        ProductRequest request = ProductFactory.productWithNegativePrice();
+        ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
-        response.body("price", equalTo(-10));
+        response.body("price", equalTo((float) request.getPrice()));
     }
 
     @Test

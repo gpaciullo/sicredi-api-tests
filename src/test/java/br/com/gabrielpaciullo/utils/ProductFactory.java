@@ -11,11 +11,27 @@ public final class ProductFactory {
         return new ProductRequest(title, price);
     }
 
+    public static ProductRequest randomValidProduct() {
+        return new ProductRequest(RandomUtils.randomProductName(), RandomUtils.randomValidPrice());
+    }
+
+    public static ProductRequest randomValidProduct(String baseTitle) {
+        return new ProductRequest(baseTitle + "-" + RandomUtils.randomProductName(), RandomUtils.randomValidPrice());
+    }
+
     public static ProductRequest productWithNegativePrice() {
-        return new ProductRequest("Produto inválido QA", -10.0);
+        return new ProductRequest(RandomUtils.randomProductName(), RandomUtils.randomNegativePrice());
+    }
+
+    public static ProductRequest productWithNegativePrice(String title) {
+        return new ProductRequest(title + "-" + RandomUtils.randomProductName(), RandomUtils.randomNegativePrice());
     }
 
     public static ProductRequest productWithEmptyTitle() {
-        return new ProductRequest("", 100.0);
+        return new ProductRequest("", RandomUtils.randomValidPrice());
+    }
+
+    public static ProductRequest productWithNullTitle() {
+        return new ProductRequest(null, RandomUtils.randomValidPrice());
     }
 }
