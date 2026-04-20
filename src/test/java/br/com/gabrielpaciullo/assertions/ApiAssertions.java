@@ -1,6 +1,11 @@
 package br.com.gabrielpaciullo.assertions;
 
 import io.restassured.response.ValidatableResponse;
+import org.hamcrest.Matcher;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
 
@@ -51,5 +56,40 @@ public final class ApiAssertions {
                 .body("title", notNullValue())
                 .body("price", notNullValue())
                 .body("category", notNullValue());
+    }
+
+    public static ValidatableResponse shouldHaveNonEmptyBody(ValidatableResponse response) {
+        return response.body(not(isEmptyOrNullString()));
+    }
+
+    public static ValidatableResponse shouldHaveErrorMessageContainingAny(ValidatableResponse response, String... keywords) {
+        List<Matcher<? super String>> matchers = Arrays.stream(keywords)
+                .map(org.hamcrest.Matchers::containsStringIgnoringCase)
+                .collect(Collectors.toList());
+
+        return response.body(anyOf(matchers));
+    }
+
+    public static ValidatableResponse shouldHaveUnauthorizedErrorDetails(ValidatableResponse response) {
+        shouldHaveNonEmptyBody(response);
+        return shouldHaveErrorMessageContainingAny(response,
+                "auth",
+                "unauthorized",
+                "forbidden",
+                "token",
+                "access"
+        );
+    }
+
+    public static ValidatableResponse shouldHaveInvalidCredentialsErrorDetails(ValidatableResponse response) {
+        shouldHaveNonEmptyBody(response);
+        return shouldHaveErrorMessageContainingAny(response,
+                "invalid",
+                "credentials",
+                "login",
+                "user",
+                "password",
+                "auth"
+        );
     }
 }
