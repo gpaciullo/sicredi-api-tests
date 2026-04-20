@@ -14,7 +14,7 @@ public class TestConfig {
             if (is != null) {
                 props.load(is);
             } else {
-                LOG.warning("config.properties não encontrado no classpath. Usando defaults.");
+                LOG.warning("config.properties not found in the classpath. Using defaults.");
             }
         } catch (Exception e) {
             throw new RuntimeException("Falha ao carregar config.properties", e);

@@ -4,8 +4,8 @@ import org.testng.annotations.DataProvider;
 
 public class TestDataProvider {
 
-	@DataProvider(name = "dadosProdutosValidos")
-    public Object[][] dadosProdutosValidos() {
+	@DataProvider(name = "validProductData")
+    public Object[][] validProductData() {
         return new Object[][] {
                 {"Produto QA", 123.45},
                 {"Produto Promo", 9.99},
@@ -13,12 +13,12 @@ public class TestDataProvider {
         };
     }
 
-    @DataProvider(name = "dadosProdutosInvalidos")
-    public Object[][] dadosProdutosInvalidos() {
+    @DataProvider(name = "invalidProductData")
+    public Object[][] invalidProductData() {
         return new Object[][] {
-                {"", 10.0},              // title vazio
-                {null, 10.0},            // title null
-                {"Produto Negativo", -1} // preço inválido
+                {"", 10.0},              // empty title
+                {null, 10.0},            // null title
+                {"Produto Negativo", -1} // invalid price
         };
     }
 }

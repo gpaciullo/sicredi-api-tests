@@ -23,7 +23,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveListarProdutosComPaginacao() {
+    public void shouldListProductsWithPagination() {
         int limit = 10;
         int skip = 0;
 
@@ -38,7 +38,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveBuscarProdutoPorId() {
+    public void shouldGetProductById() {
         int id = 1;
 
         io.restassured.response.ValidatableResponse response = products.byId(id).then();
@@ -50,17 +50,17 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveRetornarNotFoundQuandoIdInvalido() {
+    public void shouldReturnNotFoundWhenIdIsInvalid() {
         products.byId(999999).then()
                 // a API pode responder 404 ou 400 dependendo da implementação
                 .statusCode(anyOf(is(404), is(400)));
     }
 
-    @Test(dataProvider = "dadosProdutosValidos", dataProviderClass = TestDataProvider.class)
-    public void deveCriarProdutoComSucesso(String baseTitle, double price) {
+    @Test(dataProvider = "validProductData", dataProviderClass = TestDataProvider.class)
+    public void shouldCreateProductSuccessfully(String baseTitle, double price) {
         String title = baseTitle + "-" + RandomUtils.randomProductName();
 
-        io.restassured.response.ValidatableResponse response = products.add(ProductFactory.produtoValido(title, price)).then();
+        io.restassured.response.ValidatableResponse response = products.add(ProductFactory.validProduct(title, price)).then();
 
         ApiAssertions.shouldBeCreated(response);
         ApiAssertions.shouldHaveId(response);
@@ -69,8 +69,8 @@ public class ProductsTests extends BaseTest {
                 .body("price", notNullValue());
     }
 
-    @Test(dataProvider = "dadosProdutosInvalidos", dataProviderClass = TestDataProvider.class)
-    public void deveDocumentarQueApiAceitaDadosInvalidosAoAdicionarProduto(String title, double price) {
+    @Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
+    public void shouldDocumentThatApiAcceptsInvalidDataWhenAddingProduct(String title, double price) {
         // comportamento atual do DummyJSON: aceita dados inválidos e retorna 201/200
     	io.restassured.response.ValidatableResponse response = products.add(new ProductRequest(title, price)).then();
 
@@ -81,7 +81,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveDocumentarComportamentoDaPaginacaoEmValoresLimite() {
+    public void shouldDocumentPaginationBehaviorAtBoundaryValues() {
         ApiAssertions.shouldBeOk(products.list(0, 0).then());
 
         products.list(10, -1)
@@ -90,7 +90,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveDocumentarComportamentoQuandoPrecoForNegativo() {
+    public void shouldDocumentBehaviorWhenPriceIsNegative() {
         ProductRequest request = new ProductRequest("Produto inválido QA", -10.0);
 
         io.restassured.response.ValidatableResponse response = products.add(request).then();
@@ -101,7 +101,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveDocumentarComportamentoQuandoTituloForVazio() {
+    public void shouldDocumentBehaviorWhenTitleIsEmpty() {
         ProductRequest request = new ProductRequest("", 100.0);
 
         io.restassured.response.ValidatableResponse response = products.add(request).then();
@@ -112,14 +112,14 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveDocumentarComportamentoDaAPIParaPaginacaoInvalida() {
+    public void shouldDocumentApiBehaviorForInvalidPagination() {
         products.list(-1, -10)
                 .then()
                 .statusCode(anyOf(is(200), is(400)));
     }
 
     @Test
-    public void deveGarantirContratoMinimoAoBuscarProdutoPorId() {
+    public void shouldEnsureMinimumContractWhenGettingProductById() {
         int id = 1;
 
         io.restassured.response.ValidatableResponse response = products.byId(id).then();
@@ -133,7 +133,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveRetornarNaoAutorizadoQuandoAcessarEndpointProtegidoSemToken() {
+    public void shouldReturnUnauthorizedWhenAccessingProtectedEndpointWithoutToken() {
     	io.restassured.response.ValidatableResponse response = given()
                 .spec(spec)
                 .when()
@@ -144,7 +144,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveDocumentarEstabilidadeDaListagemDeProdutos() {
+    public void shouldDocumentProductListingStability() {
         int limit = 5;
         int skip = 0;
 
@@ -157,7 +157,7 @@ public class ProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveDocumentarComportamentoQuandoSkipForMaiorQueTotal() {
+    public void shouldDocumentBehaviorWhenSkipExceedsTotal() {
         products.list(10, 999999)
                 .then()
                 .statusCode(200)

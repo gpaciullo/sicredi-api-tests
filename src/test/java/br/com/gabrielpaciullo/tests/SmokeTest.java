@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.notNullValue;
 public class SmokeTest extends BaseTest {
 
 	@Test(groups = "smoke")
-    public void deveBaterNoEndpointDeHealthCheck() {
+    public void shouldCallHealthCheckEndpoint() {
 
         HealthClient healthClient = new HealthClient(spec);
 

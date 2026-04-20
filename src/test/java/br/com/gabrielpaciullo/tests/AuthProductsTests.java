@@ -23,8 +23,8 @@ public class AuthProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveAcessarAuthProductsComTokenValido() {
-        String token = obterAccessTokenValido();
+    public void shouldAccessAuthProductsWithValidToken() {
+        String token = getValidAccessToken();
 
         ValidatableResponse response = products.authProducts(token).then();
 
@@ -33,14 +33,14 @@ public class AuthProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveFalharAoAcessarAuthProductsComTokenInvalido() {
+    public void shouldFailToAccessAuthProductsWithInvalidToken() {
         ValidatableResponse response = products.authProducts("token_invalido").then();
 
         response.statusCode(anyOf(is(401), is(403)));
     }
 
     @Test
-    public void deveFalharAoAcessarAuthProductsSemAuthorizationHeader() {
+    public void shouldFailToAccessAuthProductsWithoutAuthorizationHeader() {
         ValidatableResponse response = given()
                 .spec(spec)
                 .when()
@@ -51,14 +51,12 @@ public class AuthProductsTests extends BaseTest {
     }
 
     @Test
-    public void deveFalharLoginComCredenciaisInvalidas() {
+    public void shouldFailLoginWithInvalidCredentials() {
         ValidatableResponse response = auth.login(new LoginRequest("usuario_inexistente", "senha_errada")).then();
-
-        // dependendo da implementação pode ser 400, 401 ou 422
         response.statusCode(anyOf(is(400), is(401), is(422)));
     }
 
-    private String obterAccessTokenValido() {
+    private String getValidAccessToken() {
         String username = System.getProperty("username", "emilys");
         String password = System.getProperty("password", "emilyspass");
 
