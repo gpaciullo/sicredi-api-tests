@@ -14,6 +14,10 @@ import static org.hamcrest.Matchers.*;
 
 public class ProductsTests extends BaseTest {
 
+    private static final int DEFAULT_LIMIT = 10;
+    private static final int DEFAULT_SKIP = 0;
+    private static final int KNOWN_PRODUCT_ID = 1;
+
     private ProductsClient products;
 
     @BeforeClass(alwaysRun = true)
@@ -23,28 +27,19 @@ public class ProductsTests extends BaseTest {
 
     @Test
     public void shouldListProductsWithPagination() {
-        int limit = 10;
-        int skip = 0;
-
-        ValidatableResponse response = products.list(limit, skip).then();
+        ValidatableResponse response = products.list(DEFAULT_LIMIT, DEFAULT_SKIP).then();
 
         ApiAssertions.shouldBeOk(response);
         ApiAssertions.shouldHaveNonEmptyArray(response, "products");
-
-        response.body("limit", equalTo(limit))
-                .body("skip", equalTo(skip))
-                .body("total", greaterThan(0));
+        ApiAssertions.shouldHavePaginationMetadata(response, DEFAULT_LIMIT, DEFAULT_SKIP);
     }
 
     @Test
     public void shouldGetProductById() {
-        int id = 1;
-
-        ValidatableResponse response = products.byId(id).then();
+        ValidatableResponse response = products.byId(KNOWN_PRODUCT_ID).then();
 
         ApiAssertions.shouldBeOk(response);
-        response.body("id", equalTo(id));
-        ApiAssertions.shouldHaveNonBlankField(response, "title");
+        ApiAssertions.shouldHaveProductDetails(response, KNOWN_PRODUCT_ID);
     }
 
     @Test
@@ -60,11 +55,7 @@ public class ProductsTests extends BaseTest {
         ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
-        ApiAssertions.shouldHaveId(response);
-
-        response
-                .body("title", equalTo(request.getTitle()))
-                .body("price", notNullValue());
+        ApiAssertions.shouldMatchProductRequest(response, request);
     }
 
     @Test(dataProvider = "invalidProductData", dataProviderClass = TestDataProvider.class)
@@ -77,12 +68,21 @@ public class ProductsTests extends BaseTest {
 
         ApiAssertions.shouldBeCreated(response);
         ApiAssertions.shouldHaveId(response);
-        response.body("price", notNullValue());
+
+        response.body("title", equalTo(request.getTitle()));
+        Number returnedPrice = response.extract().path("price");
+        org.testng.Assert.assertEquals(returnedPrice.doubleValue(), request.getPrice(), 0.001);
     }
 
     @Test
     public void shouldDocumentPaginationBehaviorAtBoundaryValues() {
-        ApiAssertions.shouldBeOk(products.list(0, 0).then());
+        ValidatableResponse zeroLimitResponse = products.list(0, 0).then();
+        ApiAssertions.shouldBeOk(zeroLimitResponse);
+        ApiAssertions.shouldHaveNonEmptyArray(zeroLimitResponse, "products");
+        zeroLimitResponse.body("skip", equalTo(0))
+                         .body("total", greaterThan(0))
+                         .body("limit", greaterThanOrEqualTo(0));
+
         ApiAssertions.shouldBeBadRequestOrOk(products.list(10, -1).then());
     }
 
@@ -92,15 +92,21 @@ public class ProductsTests extends BaseTest {
         ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
-        response.body("price", equalTo((float) request.getPrice()));
+        ApiAssertions.shouldHaveId(response);
+        response.body("title", equalTo(request.getTitle()))
+                .body("price", equalTo((float) request.getPrice()));
     }
 
     @Test
     public void shouldDocumentBehaviorWhenTitleIsEmpty() {
-        ValidatableResponse response = products.add(ProductFactory.productWithEmptyTitle()).then();
+        ProductRequest request = ProductFactory.productWithEmptyTitle();
+        ValidatableResponse response = products.add(request).then();
 
         ApiAssertions.shouldBeCreated(response);
         response.body("title", isEmptyString());
+
+        Number returnedPrice = response.extract().path("price");
+        org.testng.Assert.assertEquals(returnedPrice.doubleValue(), request.getPrice(), 0.001);
     }
 
     @Test
@@ -110,7 +116,7 @@ public class ProductsTests extends BaseTest {
 
     @Test
     public void shouldEnsureMinimumContractWhenGettingProductById() {
-        ValidatableResponse response = products.byId(1).then();
+        ValidatableResponse response = products.byId(KNOWN_PRODUCT_ID).then();
 
         ApiAssertions.shouldBeOk(response);
         ApiAssertions.shouldHaveProductCoreFields(response);
@@ -121,6 +127,7 @@ public class ProductsTests extends BaseTest {
         ValidatableResponse response = products.authProductsWithoutToken().then();
 
         ApiAssertions.shouldBeUnauthorized(response);
+        ApiAssertions.shouldHaveUnauthorizedErrorDetails(response);
     }
 
     @Test
@@ -133,6 +140,7 @@ public class ProductsTests extends BaseTest {
 
             ApiAssertions.shouldBeOk(response);
             ApiAssertions.shouldHaveNonEmptyArray(response, "products");
+            ApiAssertions.shouldHavePaginationMetadata(response, limit, skip);
         }
     }
 
@@ -142,5 +150,8 @@ public class ProductsTests extends BaseTest {
 
         ApiAssertions.shouldBeOk(response);
         ApiAssertions.shouldHaveEmptyArray(response, "products");
+        response.body("skip", equalTo(999999))
+                .body("total", greaterThanOrEqualTo(0))
+                .body("limit", greaterThanOrEqualTo(0));
     }
 }

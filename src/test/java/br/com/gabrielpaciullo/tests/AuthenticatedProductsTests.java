@@ -5,10 +5,11 @@ import br.com.gabrielpaciullo.client.AuthClient;
 import br.com.gabrielpaciullo.client.ProductsClient;
 import br.com.gabrielpaciullo.config.BaseTest;
 import io.restassured.response.ValidatableResponse;
+import org.hamcrest.Matchers;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class AuthProductsTests extends BaseTest {
+public class AuthenticatedProductsTests extends BaseTest {
 
     private ProductsClient products;
     private AuthClient auth;
@@ -34,6 +35,7 @@ public class AuthProductsTests extends BaseTest {
         ValidatableResponse response = products.authProducts("token_invalido").then();
 
         ApiAssertions.shouldBeUnauthorized(response);
+        ApiAssertions.shouldHaveUnauthorizedErrorDetails(response);
     }
 
     @Test
@@ -41,6 +43,7 @@ public class AuthProductsTests extends BaseTest {
         ValidatableResponse response = products.authProductsWithoutToken().then();
 
         ApiAssertions.shouldBeUnauthorized(response);
+        ApiAssertions.shouldHaveUnauthorizedErrorDetails(response);
     }
 
     @Test
@@ -48,13 +51,14 @@ public class AuthProductsTests extends BaseTest {
         ValidatableResponse response = auth.login("usuario_inexistente", "senha_errada").then();
 
         ApiAssertions.shouldBeBadRequestUnauthorizedOrUnprocessableEntity(response);
+        ApiAssertions.shouldHaveInvalidCredentialsErrorDetails(response);
     }
 
     private String getValidAccessToken() {
         return auth.loginWithDefaultCredentials()
                 .then()
-                .statusCode(org.hamcrest.Matchers.anyOf(org.hamcrest.Matchers.is(200), org.hamcrest.Matchers.is(201)))
-                .body("accessToken", org.hamcrest.Matchers.not(org.hamcrest.Matchers.isEmptyOrNullString()))
+                .statusCode(Matchers.anyOf(Matchers.is(200), Matchers.is(201)))
+                .body("accessToken", Matchers.not(Matchers.isEmptyOrNullString()))
                 .extract()
                 .path("accessToken");
     }

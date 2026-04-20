@@ -1,5 +1,6 @@
 package br.com.gabrielpaciullo.assertions;
 
+import br.com.gabrielpaciullo.model.ProductRequest;
 import io.restassured.response.ValidatableResponse;
 import org.hamcrest.Matcher;
 
@@ -34,6 +35,17 @@ public final class ApiAssertions {
         return response.statusCode(anyOf(is(400), is(401), is(422)));
     }
 
+    public static ValidatableResponse shouldHavePaginationMetadata(
+            ValidatableResponse response,
+            int expectedLimit,
+            int expectedSkip
+    ) {
+        return response
+                .body("limit", equalTo(expectedLimit))
+                .body("skip", equalTo(expectedSkip))
+                .body("total", greaterThanOrEqualTo(0));
+    }
+
     public static ValidatableResponse shouldHaveNonEmptyArray(ValidatableResponse response, String path) {
         return response.body(path, is(not(empty())));
     }
@@ -53,9 +65,28 @@ public final class ApiAssertions {
     public static ValidatableResponse shouldHaveProductCoreFields(ValidatableResponse response) {
         return response
                 .body("id", notNullValue())
-                .body("title", notNullValue())
+                .body("title", not(isEmptyOrNullString()))
                 .body("price", notNullValue())
-                .body("category", notNullValue());
+                .body("category", not(isEmptyOrNullString()))
+                .body("description", notNullValue())
+                .body("thumbnail", notNullValue());
+    }
+
+    public static ValidatableResponse shouldHaveProductDetails(ValidatableResponse response, int expectedId) {
+        return response
+                .body("id", equalTo(expectedId))
+                .body("title", not(isEmptyOrNullString()))
+                .body("price", notNullValue())
+                .body("category", not(isEmptyOrNullString()))
+                .body("description", notNullValue())
+                .body("thumbnail", notNullValue());
+    }
+
+    public static void shouldMatchProductRequest(ValidatableResponse response, ProductRequest request) {
+        response.body("title", equalTo(request.getTitle()));
+
+        Number returnedPrice = response.extract().path("price");
+        org.testng.Assert.assertEquals(returnedPrice.doubleValue(), request.getPrice(), 0.001);
     }
 
     public static ValidatableResponse shouldHaveNonEmptyBody(ValidatableResponse response) {
